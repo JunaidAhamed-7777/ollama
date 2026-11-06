@@ -4,9 +4,13 @@ import { parseVRAM, getTotalVRAM } from "./vram";
 describe("VRAM Utilities", () => {
   describe("parseVRAM", () => {
     it("should parse GB (decimal) values correctly", () => {
-      expect(parseVRAM("1 GB")).toBeCloseTo(1000 / 1024); // ≈0.9765625 GiB
-      expect(parseVRAM("16.5 GB")).toBeCloseTo(16.5 * (1000 / 1024));
-      expect(parseVRAM("32GB")).toBeCloseTo(32 * (1000 / 1024));
+      expect(parseVRAM("1 GB")).toBeCloseTo(1_000_000_000 / 1_073_741_824); // ≈0.931323 GiB
+      expect(parseVRAM("16.5 GB")).toBeCloseTo(
+        16.5 * (1_000_000_000 / 1_073_741_824),
+      );
+      expect(parseVRAM("32GB")).toBeCloseTo(
+        32 * (1_000_000_000 / 1_073_741_824),
+      );
     });
 
     it("should parse GiB (binary) values correctly", () => {
@@ -16,9 +20,9 @@ describe("VRAM Utilities", () => {
     });
 
     it("should convert MB (decimal) to GiB correctly", () => {
-      expect(parseVRAM("1000 MB")).toBeCloseTo(1000 / (1024 * 1024));
-      expect(parseVRAM("8192 MB")).toBeCloseTo(8192 / (1024 * 1024));
-      expect(parseVRAM("512.5 MB")).toBeCloseTo(512.5 / (1024 * 1024));
+      expect(parseVRAM("1000 MB")).toBeCloseTo(1_000_000_000 / 1_073_741_824);
+      expect(parseVRAM("8192 MB")).toBeCloseTo(8_192_000_000 / 1_073_741_824);
+      expect(parseVRAM("512.5 MB")).toBeCloseTo(512_500_000 / 1_073_741_824);
     });
 
     it("should convert MiB (binary) to GiB correctly", () => {
@@ -29,11 +33,39 @@ describe("VRAM Utilities", () => {
     });
 
     it("should handle case insensitive units", () => {
-      expect(parseVRAM("8 gb")).toBeCloseTo(8 * (1000 / 1024));
-      expect(parseVRAM("8 Gb")).toBeCloseTo(8 * (1000 / 1024));
+      expect(parseVRAM("8 gb")).toBeCloseTo(
+        8 * (1_000_000_000 / 1_073_741_824),
+      );
+      expect(parseVRAM("8 Gb")).toBeCloseTo(
+        8 * (1_000_000_000 / 1_073_741_824),
+      );
       expect(parseVRAM("8 GiB")).toBe(8);
       expect(parseVRAM("1024 mib")).toBe(1);
-      expect(parseVRAM("1000 mb")).toBeCloseTo(1000 / (1024 * 1024));
+      expect(parseVRAM("1000 mb")).toBeCloseTo(1_000_000_000 / 1_073_741_824);
+    });
+
+    it.each([
+      {
+        inputs: ["1 GiB", "1.073741824 GB", "1024 MiB", "1073.741824 MB"],
+        expected: 1,
+      },
+      {
+        inputs: ["6 GiB", "6.442450944 GB", "6144 MiB", "6442.450944 MB"],
+        expected: 6,
+      },
+      {
+        inputs: ["16 GiB", "17.179869184 GB", "16384 MiB", "17179.869184 MB"],
+        expected: 16,
+      },
+    ])("should preserve $expected GiB across units", ({ inputs, expected }) => {
+      for (const input of inputs) {
+        expect(parseVRAM(input)).toBeCloseTo(expected, 12);
+      }
+    });
+
+    it("should convert decimal GB below a model recommendation threshold", () => {
+      expect(parseVRAM("16.5 GB")).toBeCloseTo(15.366822481155396);
+      expect(parseVRAM("16.5 GB")).toBeLessThan(16);
     });
 
     it("should return null for invalid inputs", () => {
@@ -78,19 +110,19 @@ describe("VRAM Utilities", () => {
       const computes = [
         { vram: "1024 MiB" }, // 1 GiB
         { vram: "2048 MiB" }, // 2 GiB
-        { vram: "1000 MB" }, // ~0.000953 GiB
+        { vram: "1000 MB" }, // ~0.931323 GiB
       ];
-      expect(getTotalVRAM(computes)).toBeCloseTo(3.000953);
+      expect(getTotalVRAM(computes)).toBeCloseTo(3.9313225746154785);
     });
 
     it("should handle mixed units", () => {
       const computes = [
         { vram: "8 GiB" },
-        { vram: "1000 MB" }, // ~0.000953 GiB
-        { vram: "16 GB" }, // 16 * 0.9765625 GiB
+        { vram: "1000 MB" }, // ~0.931323 GiB
+        { vram: "16 GB" }, // ~14.901161 GiB
       ];
 
-      expect(getTotalVRAM(computes)).toBeCloseTo(8 + 0.000953 + 15.625);
+      expect(getTotalVRAM(computes)).toBeCloseTo(23.83248394727707);
     });
 
     it("should skip invalid VRAM strings", () => {

@@ -1,8 +1,8 @@
 const GIB_FACTOR: Record<string, number> = {
   gib: 1, // 1 GiB = 1 GiB
-  gb: 1000 / 1024, // 1 GB (decimal) = ~0.9765625 GiB
+  gb: 1000 ** 3 / 1024 ** 3, // 1 GB (decimal) = ~0.931323 GiB
   mib: 1 / 1024, // 1 MiB = 1/1024 GiB
-  mb: 1 / (1024 * 1024), // 1 MB (decimal) = 1,000,000 bytes = ~9.54e-7 GiB
+  mb: 1000 ** 2 / 1024 ** 3, // 1 MB (decimal) = ~0.000931 GiB
 };
 
 export function parseVRAM(vramString: string): number | null {
